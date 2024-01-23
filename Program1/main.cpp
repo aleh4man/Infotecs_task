@@ -11,8 +11,7 @@ int main(){
     int yes = 1;
     if (bind (listener, (struct sockaddr*)&addr_serv, sizeof(addr_serv)) == -1) {return -1;}
 
-    //if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {return -1;}
-    if (setsockopt(listener, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(int)) == -1) {return -1;}
+    if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR|SO_REUSEPORT, &yes, sizeof(int)) == -1) {return -1;}
     
     listen(listener, 1);
 

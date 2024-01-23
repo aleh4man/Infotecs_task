@@ -52,6 +52,7 @@ public:
     int sum();
     void send_sum(int);
     void run();
+    int try_connect();
 };
 
 #endif

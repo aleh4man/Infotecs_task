@@ -1,7 +1,6 @@
 #include "classes.hpp"
 
-
-
+//Buffer methods
 Buffer::Buffer(){ queue = new std::list<std::string>(); }
 
 void Buffer::put(std::string str){ queue->push_back(str); }
@@ -16,6 +15,7 @@ bool Buffer::isEmpty(){return queue->empty();}
 
 
 
+//Reader methods
 Reader::Reader(Buffer* buff, std::mutex* mut) {
     data = "";
     this->buff = buff;
@@ -101,6 +101,7 @@ void Reader::send_to_buffer(std::string str) {buff->put(str);}
 
 
 
+//DataHandler methods
 DataHandler::DataHandler(Buffer* buff, std::mutex* mut, int listener){
     data = "";
     this->buff = buff;
@@ -153,32 +154,13 @@ int DataHandler::sum(){
 }
 
 void DataHandler::send_sum(int sum){
-    /*struct sockaddr_in test;
-    socklen_t lentest;
-    
-    char* ip;
-    ip = inet_ntoa(test.sin_addr);
-    cout << ip << " (" << ntohs(test.sin_port) << ")\n";
-
-    int sock = accept(serv, (struct sockaddr*)&test, &lentest);
-    if (sock < 0) return;*/
-
-    if (!connection_accept){
-        sock = accept(listener, NULL, NULL);
-        if (sock < 0) {
-            cout << "connection failed\n";
-            exit(1);
-        }
-        connection_accept = true;
-    }
     std::string str = std::to_string(sum);
     const char* cstr = str.c_str();
-
-    if (send(sock, cstr, sizeof(cstr), 0) < 0){
+    int state = send(sock, cstr, 1024, 0);
+    if (state < 0) {
         cout << "connection closed " << errno << "\n";
         connection_accept = false;
         close(sock);
-        exit(1);
     }
 }
 
@@ -188,11 +170,27 @@ void DataHandler::run(){
             std::this_thread::yield();
         }
         else {
-            mut->lock();
-            get_string();
-            int s = sum();
-            mut->unlock();
-            send_sum(s);
+            if (try_connect() == 0) {
+                mut->lock();
+                get_string();
+                int s = sum();
+                send_sum(s);
+                mut->unlock();
+            }
         }
     }
+}
+
+int DataHandler::try_connect(){
+    if (!connection_accept){
+        cout << "connection failed\n";
+        sock = accept(listener, NULL, NULL);
+        if (sock < 0) {
+            cout << "connection failed\n";
+            close(sock);
+            return -1;
+        }
+        connection_accept = true;
+    }
+    return 0;
 }
